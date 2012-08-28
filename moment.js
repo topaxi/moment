@@ -24,7 +24,7 @@
         // will be inherited from English if not provided in a language
         // definition.  monthsParse is also a lang config property, but it
         // cannot be inherited and as such cannot be enumerated here.
-        langConfigProperties = 'months|monthsShort|weekdays|weekdaysShort|weekdaysMin|longDateFormat|calendar|relativeTime|ordinal|meridiem'.split('|'),
+        langConfigProperties = 'months|monthsShort|weekdays|weekdaysShort|weekdaysMin|longDateFormat|calendar|relativeTime|ordinal|meridiem|preparse|postformat'.split('|'),
 
         // ASP.NET json date format regex
         aspNetJsonRegex = /^\/?Date\((\-?\d+)/i,
@@ -645,12 +645,20 @@
             return null;
         }
         var date,
-            matched;
+            matched,
+            isString = typeof input === 'string';
+
         // parse Moment object
         if (moment.isMoment(input)) {
             return new Moment(new Date(+input._d), input._isUTC, input._lang);
+        }
+
+        if (isString) {
+            input = moment.langData().preparse(input);
+        }
+        
         // parse string and format
-        } else if (format) {
+        if (format) {
             if (isArray(format)) {
                 date = makeDateFromStringAndArray(input, format);
             } else {
@@ -663,7 +671,7 @@
                 matched ? new Date(+matched[1]) :
                 input instanceof Date ? input :
                 isArray(input) ? dateFromArray(input) :
-                typeof input === 'string' ? makeDateFromString(input) :
+                isString ? makeDateFromString(input) :
                 new Date(input);
         }
 
@@ -813,7 +821,9 @@
                 (b === 1) ? 'st' :
                 (b === 2) ? 'nd' :
                 (b === 3) ? 'rd' : 'th';
-        }
+        },
+        preparse : function (string) { return string; },
+        postformat : function (string) { return string; }
     });
 
 
@@ -876,7 +886,9 @@
         },
 
         format : function (inputString) {
-            return formatMoment(this, inputString ? inputString : moment.defaultFormat);
+            var string = formatMoment(this, inputString ? inputString : moment.defaultFormat);
+
+            return this.lang().postformat(string);
         },
 
         add : function (input, val) {
